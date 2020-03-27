@@ -139,10 +139,10 @@ item *reorg(item *phead) {
         if (head->next == NULL)
             break;
     }
-    printList(head);
-    printf("\n");
-    printList(head->next);
-    printf("\n");
+    //printList(head);
+    //printf("\n");
+    //printList(head->next);
+    //printf("\n");
     //if (mainlength != len && head && head->next == NULL)
       //  head->c = ' ';
     //if (last && last->next &&(last->next->c == ' ' || last->next->c == '\t'))
