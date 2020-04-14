@@ -24,7 +24,7 @@ int getint(int *a);
 char *getstr();
 void init(Item *table[]);
 int add(Item *table[], int key, char* str);
-void delete(Item *table[], int key, int rel);
+int delete(Item *table[], int key, int rel);
 void find_by_key(Item *table[], int key);
 void find_by_key_release(Item *table[], int key, int rel);
 void print_table(Item *table[]);
@@ -178,9 +178,9 @@ int add(Item *table[], int key, char* str) // функция добавлени�
       return 0;
 }
 
-void delete(Item *table[], int key, int rel)
+int delete(Item *table[], int key, int rel)
 {
-  Item *Node;
+  Item *Node, *tmpItem;
   Info *tmpPrev, *tmpNext, *tmp;
   int h = hash(key);
   Node = table[h];
@@ -198,26 +198,39 @@ void delete(Item *table[], int key, int rel)
             if (tmp->release == rel)
             {
               if (tmpPrev == NULL)
-              {
-                k++;
-                Node->info = tmpNext;
-              }
-              else 
-              {
-                k++;
-                tmpPrev->next = tmpNext;
-                free(tmp);
-              }
+                {
+
+                  Node->info = tmpNext;
+                  tmpItem = tmp;
+                  free(tmpItem->info);
+                  free(tmpItem);
+                  if (Node->info == NULL)
+                  {
+                    free(table[h]);
+                    table[h] = NULL;
+                  }
+                  return 0;
+                  k++;
+                }
+              else
+                {
+                  tmpPrev->next = tmpNext;
+                  tmpItem = tmp;
+                  free(tmpItem->info);
+                  free(tmpItem);
+                  k++;
+                  return 0;
+                }
             }
             tmpPrev = tmp;
-        }        
+        }    
       }
       Node = Node->next;
-      
     }
     if (k == 0)
     printf("The element to delete was not found\n");
   }
+  return 0;
 }
 
 void find_by_key(Item *table[], int key) // функция поиска элементов по ключу
@@ -359,13 +372,13 @@ void clean(Item *table[]) // функция очистки таблицы
                 {
                     trashInfo = tmpInfo;
                     tmpInfo = tmpInfo->next;
+                    free(trashInfo->info);
                     free(trashInfo);
                 }
                 trash = tmp;
                 tmp = tmp->next;
                 free(trash);
             }
-            free(tmp);
         }
     }
 }
