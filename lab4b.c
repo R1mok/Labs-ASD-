@@ -227,7 +227,7 @@ void Read_from_file(Table *table)
 				PrevInfo = table->tab[m]->info;
 				if (curItem->next_setItem == posInfo)
 				{
-					//curInfo;
+					free(curInfo);
 					break;
 				}
 			} while (1);
@@ -235,12 +235,12 @@ void Read_from_file(Table *table)
 			posItem = ftell(table->fd);
 			if (posItem == end)
 			{
-				//free(curItem);
+				free(curItem);
 				break;
 			}
 			else{
 				fseek(table->fd, posItem, SEEK_SET);
-				//free(curItem);
+				free(curItem);
 			}
 		} while (1);
 	}
