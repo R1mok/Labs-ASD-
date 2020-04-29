@@ -1,4 +1,3 @@
-//#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -183,7 +182,6 @@ void Read_from_file(Table *table)
 		fread(&LinePos, sizeof(int), 1, table->fd);
 		fread(&end, sizeof(int), 1, table->fd);
 		fseek(table->fd, LinePos, SEEK_SET);
-
 		int m = 0;
 		Info *PrevInfo = NULL;
 		Item* PrevItem = NULL, *tItem = NULL;
@@ -195,10 +193,10 @@ void Read_from_file(Table *table)
 		Item* countItem = NULL;
 		do
 		{
-			fread(&tmpItemFile, sizeof(Item), 1, table->fd);
+			fread(&tmpItemFile, sizeof(ItemFile), 1, table->fd);
 			curItem = (Item*)malloc(sizeof(Item));
 			curItem->next = NULL;
-			curItem->ItemFile = calloc(3, sizeof(Item*));
+			curItem->ItemFile = calloc(3, sizeof(ItemFile));
 			*curItem->ItemFile = tmpItemFile;
 			m = hash(curItem->ItemFile->key);
 			if (table->tab[m] == NULL)
@@ -218,9 +216,9 @@ void Read_from_file(Table *table)
 			Info* count = NULL;
 			do
 			{
-				fread(&tmpInfoFile, sizeof(Info), 1, table->fd);
+				fread(&tmpInfoFile, sizeof(InfoFile), 1, table->fd);
 				curInfo = (Info*)malloc(sizeof(Info));
-				curInfo->InfoFile = calloc(1, sizeof(InfoFile));
+				curInfo->InfoFile = calloc(3, sizeof(InfoFile));
 				*curInfo->InfoFile = tmpInfoFile;
 				curInfo->next = NULL;
 				if (count)
@@ -259,8 +257,8 @@ void Read_from_file(Table *table)
 }
 void Write_table_to_file(Table *table)
 {
-	Info *curInfo = NULL, *trashInfo = NULL;
-	Item* curItem = NULL, *trashItem = NULL;
+	Info *curInfo = NULL;
+	Item *curItem = NULL;
 	size_t pos = 0, setpos = 0;
 	if (table->fName)
 	{
@@ -276,27 +274,23 @@ void Write_table_to_file(Table *table)
 					while (curItem)
 					{
 						if (setpos)
-						fseek(table->fd, setpos, SEEK_SET);
+							fseek(table->fd, setpos, SEEK_SET);
 						curItem->ItemFile->setItem = ftell(table->fd);
+						curItem->ItemFile->next_setItem = NULL;
 						fwrite(curItem->ItemFile, sizeof(ItemFile), 1, table->fd);
 						curInfo = curItem->info;
 						while (curInfo)
 						{
 							pos = ftell(table->fd);
 							curInfo->InfoFile->setInfo = pos;
-							fwrite(curInfo, sizeof(InfoFile), 1, table->fd);
-							pos = ftell(table->fd);
-							fseek(table->fd, curInfo->InfoFile->setInfo, SEEK_SET);
 							fwrite(curInfo->InfoFile, sizeof(InfoFile), 1, table->fd);
 							curInfo = curInfo->next;
 						}
 						pos = ftell(table->fd);
-						curItem->ItemFile->next_setItem = pos;
-						setpos = curItem->ItemFile->next_setItem;
+						curItem->ItemFile->next_setItem = setpos = pos;
 						end = ftell(table->fd);
 						fseek(table->fd, curItem->ItemFile->setItem, SEEK_SET);
 						fwrite(curItem->ItemFile, sizeof(ItemFile), 1, table->fd);
-
 						curItem = curItem->next;
 					}
 				}
@@ -305,6 +299,7 @@ void Write_table_to_file(Table *table)
 		rewind(table->fd);
 		fwrite(&LinePos, sizeof(int), 1, table->fd);
 		fwrite(&end, sizeof(int), 1, table->fd);
+		//if (end)
 		ftruncate(fileno(table->fd), end);
 		printf("Str %d \n", LinePos);
 		fclose(table->fd);
@@ -315,6 +310,7 @@ int add(Table *table, int key, char* str) // функция добавления
 {
 	int h = hash(key);
 	Item *node, *tmpNode = NULL;
+	table->fd = fopen(table->fName, "r+b");
 	if (table->tab[h] == NULL)
 	{
 		node = malloc(sizeof(Item));
@@ -328,7 +324,6 @@ int add(Table *table, int key, char* str) // функция добавления
 		node->next = NULL;
 		if (table->fName)
 		{
-			table->fd = fopen(table->fName, "r+b");
 			if (table->fd)
 			{
 				fseek(table->fd, 0, SEEK_END);
@@ -337,9 +332,8 @@ int add(Table *table, int key, char* str) // функция добавления
 				node->info->InfoFile->offset = ftell(table->fd);
 				node->info->InfoFile->len = strlen(str) + 1;
 				node->info->InfoFile->release = 1;
-				fwrite(str, sizeof(char), node->info->InfoFile->len, table->fd);
+				fwrite(str, sizeof(char), strlen(str) + 1, table->fd);
 				LinePos = ftell(table->fd);
-				fclose(table->fd);
 				if (tmpNode != NULL)
 					tmpNode->next = node;
 				else
@@ -351,6 +345,7 @@ int add(Table *table, int key, char* str) // функция добавления
 		}
 		else 
 			printf("Name not found");
+		fclose(table->fd);
 	}
 	else
 	{
@@ -366,7 +361,6 @@ int add(Table *table, int key, char* str) // функция добавления
 				tmp->InfoFile->release = rel;
 				if (table->fName)
 				{
-					table->fd = fopen(table->fName, "r+b");
 					if (table->fd)
 					{
 						fseek(table->fd, 0, SEEK_END);
@@ -393,7 +387,6 @@ int add(Table *table, int key, char* str) // функция добавления
 
 				if (table->fName)
 				{
-					table->fd = fopen(table->fName, "r+b");
 					if (table->fd)
 					{
 						fseek(table->fd, 0, SEEK_END);
@@ -424,7 +417,8 @@ int delete(Table *table, int key, int rel)
 	Node = table->tab[h];
 	if (table->tab[h] == NULL)
 		printf("The element to delete was not found\n");
-	else {
+	else 
+	{
 		int k = 0;
 		for (NodePrev = NULL; Node; Node = NodeNext)
 		{
@@ -515,6 +509,7 @@ int delete(Table *table, int key, int rel)
 		if (k == 0)
 			printf("The element to delete was not found\n");
 	}
+	fclose(table->fd);
 	return 0;
 }
 
@@ -527,7 +522,8 @@ void find_by_key(Table *table, int key) // функция поиска элем�
 		printf("There is no such key in table \n"); // если хэша по такому ключу нет в таблице
 		return 0;
 	}
-	else {
+	else 
+	{
 		int k = 0;
 		while (Node)
 		{
@@ -536,16 +532,15 @@ void find_by_key(Table *table, int key) // функция поиска элем�
 				while (tmp)
 				{
 					table->fd = fopen(table->fName, "r+b");
-					char *info;
 					fseek(table->fd, tmp->InfoFile->offset, SEEK_SET);
-					long int  size = ftell(table->fd);
+					int  size = tmp->InfoFile->len;
 					printf("[%d] '", tmp->InfoFile->release);
-					while (size = fread(&info, 1, tmp->InfoFile->len, table->fd))
+					while (size--)
 					{
-						fwrite(&info, 1, size - 1, stdout);
-						printf("' ");
-						break;
+						char*c = getc(table->fd);
+						printf("%c", c);
 					}
+					printf("'");
 					k++;
 					tmp = tmp->next;
 				}
@@ -557,7 +552,6 @@ void find_by_key(Table *table, int key) // функция поиска элем�
 	}
 	fclose(table->fd);
 	return 0;
-
 }
 
 void find_by_key_release(Table *table, int key, int rel) // функция поиска элемента в таблице по ключу и версии
@@ -565,11 +559,13 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 	int h = hash(key);
 	Item *tmp, *Node;
 	Node = table->tab[h];
-	if (table->tab[h] == NULL) {
+	if (table->tab[h] == NULL) 
+	{
 		printf("There is no such key in table\n");
 		return 0;
 	}
-	else {
+	else 
+	{
 		int k = 0;
 		while (Node)
 		{
@@ -578,18 +574,18 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 				while (tmp)
 				{
 					table->fd = fopen(table->fName, "r+b");
-					if (tmp->InfoFile->release == rel) {
-						k++;
-						char *info;
+					if (tmp->InfoFile->release == rel) 
+					{
 						fseek(table->fd, tmp->InfoFile->offset, SEEK_SET);
-						long int  size = ftell(table->fd);
+						int  size = tmp->InfoFile->len;
 						printf("'");
-						while (size = fread(&info, 1, tmp->InfoFile->len, table->fd))
+						while (size--)
 						{
-							fwrite(&info, 1, size - 1, stdout);
-							printf("' ");
-							break;
+							char*c = getc(table->fd);
+							printf("%c", c);
 						}
+						printf("'");
+						k++;
 					}
 					tmp = tmp->next;
 				}
@@ -599,7 +595,7 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 		if (k == 0)
 			printf("There is no such release for this key\n"); // если найден ключ, но не найдена версия
 	}
-
+	fclose(table->fd);
 }
 
 void d_add() // диалоговая функция добавления элемента
@@ -611,6 +607,7 @@ void d_add() // диалоговая функция добавления эле�
 	printf("Enter info: ");
 	info = getstr();
 	add(&table, k, info);
+	free(info);
 }
 
 void d_delete() // диалоговая функция удаления элемента
@@ -639,12 +636,13 @@ void d_find_by_key_release() // диалоговая функция поиска
 	n = getint(&k);
 	printf("Enter release: ");
 	r = getint(&rel);
-	find_by_key_release(&table, k, rel);
+	find_by_key_release(&table, k, r);
 }
 
 void print_table(Table *table) // функция печати таблицы
 {
 	Item *tmpItem;
+	table->fd = fopen(table->fName, "r+b");
 	for (int i = 0; i < SIZE; ++i)
 	{
 		tmpItem = table->tab[i];
@@ -655,23 +653,22 @@ void print_table(Table *table) // функция печати таблицы
 				Info *tmpInfo = tmpItem->info;
 				while (tmpInfo != NULL)
 				{
-					table->fd = fopen(table->fName, "r+b");
-					char *info;
 					fseek(table->fd, tmpInfo->InfoFile->offset, SEEK_SET);
-					long int  size = ftell(table->fd);
+					int size = tmpInfo->InfoFile->len;
 					printf("[%d] [%d] '", tmpItem->ItemFile->key, tmpInfo->InfoFile->release);
-					while (size = fread(&info, 1, tmpInfo->InfoFile->len, table->fd))
+					while (size--)
 					{
-						fwrite(&info, 1, size - 1, stdout);
-						printf("' ");
-						break;
+						char *c = getc(table->fd);
+						printf("%c", c);
 					}
+					printf("' ");
 					tmpInfo = tmpInfo->next;
 				}
 				printf("\n");
 			}
 		}
 	}
+	fclose(table->fd);
 }
 
 void clean(Table *table) // функция очистки таблицы
@@ -700,4 +697,5 @@ void clean(Table *table) // функция очистки таблицы
 			}
 		}
 	}
+	free(table->fName);
 }
