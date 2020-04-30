@@ -6,24 +6,28 @@
 
 #define SIZE 10
 
-typedef struct Item {
+typedef struct Item 
+{
 	struct ItemFile *ItemFile;
 	struct Info *info; // указатель на элемент
 	struct Item *next; // указатель на следующий элемет в таблице
 }Item;
 
-typedef struct ItemFile{
+typedef struct ItemFile
+{
 	int key; // ключ элемента
 	int setItem; // смещение элемента таблицы в файле относительно начала
 	int next_setItem; // смещение следующего элемента таблицы в файле относительно начала
 }ItemFile;
 
-typedef struct Info {
+typedef struct Info 
+{
 	struct InfoFile *InfoFile;
 	struct Info *next; // указатель на следующий элемент в списке
 }Info;
 
-typedef struct InfoFile{
+typedef struct InfoFile
+{
 	int len; // длина информации
 	int offset; // смещение в файле
 	int release; // версия элемента
@@ -102,7 +106,8 @@ int dialog(int N) {  // диалоговая функция
 	char *errmsg = "";
 	int rc;
 	int i, n;
-	do {
+	do 
+	{
 		puts(errmsg);
 		errmsg = "You are wrong. Repeat, please!";
 		for (i = 0; i < N; ++i)
@@ -118,9 +123,11 @@ int dialog(int N) {  // диалоговая функция
 int getint(int *a) // функция ввода числа
 {
 	int n;
-	do {
+	do 
+	{
 		n = scanf("%d", a);
-		if (n == 0 || a < 0) {
+		if (n == 0 || a < 0) 
+		{
 			scanf("%*[^\n]");
 			printf("Error! That's not number\n"); // если вводится не число
 		}
@@ -138,14 +145,16 @@ char *getstr() // функция безопасного получения ст�
 	*ptr = '\0';
 	do {
 		n = scanf("%99[^\n]", buf);
-		if (n < 0) {
+		if (n < 0) 
+		{
 			free(ptr);
 			ptr = NULL;
 			continue;
 		}
 		if (n == 0)
 			scanf("%*c");
-		else {
+		else 
+		{
 			len += strlen(buf);
 			ptr = (char *)realloc(ptr, len + 1); // добавляем память 
 			strcat(ptr, buf);
@@ -156,7 +165,8 @@ char *getstr() // функция безопасного получения ст�
 
 void init(Table *table) // инициализация таблицы
 {
-	for (int i = 0; i < SIZE; ++i) {
+	for (int i = 0; i < SIZE; ++i) 
+	{
 		table->tab[i] = NULL;
 	}
 }
@@ -173,9 +183,7 @@ void Read_from_file(Table *table)
 	{
 		table->fd = fopen(table->fName, "w+b");
 		if (table->fd)
-		{
 			fwrite(&LinePos, sizeof(int), 2, table->fd);
-		}
 	}
 	else
 	{
@@ -212,7 +220,7 @@ void Read_from_file(Table *table)
 			}
 			tItem = table->tab[m];
 			if (tItem->next)
-			tItem = tItem->next;
+				tItem = tItem->next;
 			Info* count = NULL;
 			do
 			{
@@ -237,28 +245,24 @@ void Read_from_file(Table *table)
 				size_t posInfo = ftell(table->fd);
 				PrevInfo = table->tab[m]->info;
 				if (curItem->ItemFile->next_setItem == posInfo)
-				{
 					break;
-				}
 			} while (1);
 			size_t posItem;
 			posItem = ftell(table->fd);
 			if (posItem == end)
-			{
 				break;
-			}
 			else
-			{
 				fseek(table->fd, posItem, SEEK_SET);
-			}
 		} while (1);
 	}
 	fclose(table->fd);
 }
+
 void Write_table_to_file(Table *table)
 {
 	Info *curInfo = NULL;
 	Item *curItem = NULL;
+	int checkend = 0;
 	size_t pos = 0, setpos = 0;
 	if (table->fName)
 	{
@@ -271,6 +275,7 @@ void Write_table_to_file(Table *table)
 				curItem = table->tab[i];
 				if (curItem)
 				{
+					checkend++;
 					while (curItem)
 					{
 						if (setpos)
@@ -299,11 +304,16 @@ void Write_table_to_file(Table *table)
 		rewind(table->fd);
 		fwrite(&LinePos, sizeof(int), 1, table->fd);
 		fwrite(&end, sizeof(int), 1, table->fd);
-		//if (end)
-		ftruncate(fileno(table->fd), end);
+		if (end)
+			ftruncate(fileno(table->fd), end);
+		if (!checkend)
+		{
+			int k = remove(table->fName);
+			printf("%d", k);
+		}
 		printf("Str %d \n", LinePos);
-		fclose(table->fd);
 	}
+	fclose(table->fd);
 }
 
 int add(Table *table, int key, char* str) // функция добавления элемента в таблицу
@@ -345,7 +355,7 @@ int add(Table *table, int key, char* str) // функция добавления
 		}
 		else 
 			printf("Name not found");
-		fclose(table->fd);
+	fclose(table->fd);
 	}
 	else
 	{
@@ -415,6 +425,7 @@ int delete(Table *table, int key, int rel)
 	Info *tmpPrev, *tmpNext, *tmp, *tmpInfo;
 	int h = hash(key);
 	Node = table->tab[h];
+	table->fd = fopen(table->fName, "r+b");
 	if (table->tab[h] == NULL)
 		printf("The element to delete was not found\n");
 	else 
@@ -518,7 +529,9 @@ void find_by_key(Table *table, int key) // функция поиска элем�
 	int h = hash(key);
 	Item *Node;
 	Node = table->tab[h];
-	if (table->tab[h] == NULL) {
+	table->fd = fopen(table->fName, "r+b");
+	if (table->tab[h] == NULL) 
+	{
 		printf("There is no such key in table \n"); // если хэша по такому ключу нет в таблице
 		return 0;
 	}
@@ -527,11 +540,11 @@ void find_by_key(Table *table, int key) // функция поиска элем�
 		int k = 0;
 		while (Node)
 		{
-			if (Node->ItemFile->key == key) {
+			if (Node->ItemFile->key == key) 
+			{
 				Info *tmp = Node->info;
 				while (tmp)
 				{
-					table->fd = fopen(table->fName, "r+b");
 					fseek(table->fd, tmp->InfoFile->offset, SEEK_SET);
 					int  size = tmp->InfoFile->len;
 					printf("[%d] '", tmp->InfoFile->release);
@@ -559,6 +572,7 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 	int h = hash(key);
 	Item *tmp, *Node;
 	Node = table->tab[h];
+	table->fd = fopen(table->fName, "r+b");
 	if (table->tab[h] == NULL) 
 	{
 		printf("There is no such key in table\n");
@@ -569,13 +583,15 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 		int k = 0;
 		while (Node)
 		{
-			if (Node->ItemFile->key == key) {
+			if (Node->ItemFile->key == key) 
+			{
 				Info *tmp = Node->info;
 				while (tmp)
 				{
-					table->fd = fopen(table->fName, "r+b");
 					if (tmp->InfoFile->release == rel) 
 					{
+						printf("+\n");
+						k++;
 						fseek(table->fd, tmp->InfoFile->offset, SEEK_SET);
 						int  size = tmp->InfoFile->len;
 						printf("'");
@@ -585,7 +601,6 @@ void find_by_key_release(Table *table, int key, int rel) // функция по�
 							printf("%c", c);
 						}
 						printf("'");
-						k++;
 					}
 					tmp = tmp->next;
 				}
@@ -636,7 +651,7 @@ void d_find_by_key_release() // диалоговая функция поиска
 	n = getint(&k);
 	printf("Enter release: ");
 	r = getint(&rel);
-	find_by_key_release(&table, k, r);
+	find_by_key_release(&table, k, rel);
 }
 
 void print_table(Table *table) // функция печати таблицы
