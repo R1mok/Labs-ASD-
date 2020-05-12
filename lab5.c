@@ -266,9 +266,9 @@ void d_find_by_key(Node* root) // диалоговая функция поиск
 	else
 	{
 		printf("Key: %s Info: %s", cur->key, cur->info);
-		free(cur->info);
-		free(cur->key);
-		free(cur);
+		//free(cur->info);
+		//free(cur->key);
+		//free(cur);
 	}
 	free(key);
 }
