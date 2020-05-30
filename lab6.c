@@ -157,7 +157,7 @@ AdjList* add_node(AdjList* graph, int name, int x, int y)
 int weight(int x1, int y1, int x2, int y2)
 {
 	int w;
-	w = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+	w = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) + 0.5;
 	return w;
 }
 
@@ -573,7 +573,7 @@ AdjList* Dijkstra(AdjList* graph, int f, int s)
 {
 	AdjList* gr = graph;
 	int n = 0, i = 0, minindex, min = 0, tmp, fi = -1, e = -1, w = 0, j = 0;
-	int* d, * u;
+	int* d, * u, * prev;
 	while (gr)
 	{
 		gr->node->id = i++;
@@ -592,11 +592,14 @@ AdjList* Dijkstra(AdjList* graph, int f, int s)
 	gr = graph;
 	d = malloc(sizeof(int) * n);
 	u = malloc(sizeof(int) * n);
+	prev = malloc(sizeof(int) * n);
 	for (int i = 0; gr; gr = gr->next, i++)
 	{
 		d[i] = INF;
 		u[i] = 0;
 	}
+	for (int i = 0; i < n; ++i)
+		prev[i] = -1;
 	d[fi] = 0;
 	minindex = fi;
 	while (min < INF)
@@ -614,7 +617,10 @@ AdjList* Dijkstra(AdjList* graph, int f, int s)
 				{
 					w = ANode->weight;
 					if (d[i] + w < d[ANode->node->id])
+					{
 						d[ANode->node->id] = d[i] + w;
+						prev[ANode->node->id] = i;
+					}
 					ANode = ANode->next;
 				}
 			}
@@ -631,21 +637,49 @@ AdjList* Dijkstra(AdjList* graph, int f, int s)
 		}
 	}
 	int si = 0;
-	gr = graph;
-	while (gr)
+
+	//---------------------------------------------------
+
+	int k = 0;
+	int* path = malloc(sizeof(int) * n);
+	for (int i = 0; i < n; ++i)
+		path[i] = -1;
+	j = e;
+	while (j != -1)
 	{
-		if (gr->node->name == s)
-			si = gr->node->id;
-		gr = gr->next;
+		path[k] = j;
+		j = prev[j];
+		k++;
 	}
-	if (d[si] == INF)
+	gr = graph;
+	for (int i = n-1; i >= 0; --i)
+	{
+		if (path[i] >= 0)
+		{
+			while (gr)
+			{
+				if (path[i] == gr->node->id)
+					printf("%d ", gr->node->name);
+				gr = gr->next;
+			}
+		}
+		gr = graph;
+	}
+	printf("\n");
+	// ---------------------------------------------------
+
+	if (d[e] == INF)
 		pathFlag = 1;
 	else
-		minPath = d[si];
+		minPath = d[e];
+
+	free(prev);
+	free(path);
 	free(d);
 	free(u);
 	return graph;
 }
+
 
 AdjList* d_Dijkstra(AdjList* graph)
 {
@@ -694,7 +728,7 @@ void d_timing()
 	return;
 }
 
-#define P_LEN 20
+#define P_LEN 40
 void draw_graph(AdjList* graph)
 {
 	AdjList* g = graph;
@@ -719,7 +753,7 @@ void draw_graph(AdjList* graph)
 	int i = 0;
 	while (g)
 	{
-		sprintf(s, "%d", g->node->name);
+		sprintf(s, "%d: %d,%d", g->node->name, g->node->x, g->node->y);
 		agn[g->node->id] = agnode(pic, s, TRUE);
 		sprintf(s, "%d,%d", g->node->x, g->node->y);
 		g = g->next;
