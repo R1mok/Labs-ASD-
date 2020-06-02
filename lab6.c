@@ -638,45 +638,50 @@ AdjList* Dijkstra(AdjList* graph, int f, int s)
 	}
 	int si = 0;
 
-	//---------------------------------------------------
-
-	int k = 0;
-	int* path = malloc(sizeof(int) * n);
-	for (int i = 0; i < n; ++i)
-		path[i] = -1;
-	j = e;
-	while (j != -1)
-	{
-		path[k] = j;
-		j = prev[j];
-		k++;
-	}
-	gr = graph;
-	for (int i = n-1; i >= 0; --i)
-	{
-		if (path[i] >= 0)
-		{
-			while (gr)
-			{
-				if (path[i] == gr->node->id)
-					printf("%d ", gr->node->name);
-				gr = gr->next;
-			}
-		}
-		gr = graph;
-	}
-	printf("\n");
-	// ---------------------------------------------------
 
 	if (d[e] == INF)
 		pathFlag = 1;
 	else
 		minPath = d[e];
 
+	//---------------------------------------------------
+	if (d[e] != INF)
+	{
+		int k = 0;
+		int* path = malloc(sizeof(int) * n);
+		for (int i = 0; i < n; ++i)
+			path[i] = -1;
+		j = e;
+		while (j != -1)
+		{
+			path[k] = j;
+			j = prev[j];
+			k++;
+		}
+		gr = graph;
+		for (int i = n-1; i >= 0; --i)
+		{
+			if (path[i] >= 0)
+			{
+				while (gr)
+				{
+					if (path[i] == gr->node->id)
+						printf("%d ", gr->node->name);
+					gr = gr->next;
+				}
+			}
+			gr = graph;
+		}
+		printf("\n");
+		free(path);
+	}
+	// ---------------------------------------------------
+
+
 	free(prev);
-	free(path);
 	free(d);
 	free(u);
+
 	return graph;
 }
 
